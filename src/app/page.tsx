@@ -366,7 +366,7 @@ export default function Home() {
                   >
                     <div className="flex items-start gap-3">
                       <img
-                        src={item.track.cover_url}
+                        src={item.track.cover_url || 'https://via.placeholder.com/48'}
                         alt={item.track.title}
                         className="w-12 h-12 rounded object-cover"
                       />
