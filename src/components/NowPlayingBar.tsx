@@ -71,35 +71,92 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
 
   if (!currentTrack) {
     return (
-      <div className="bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 text-white p-4 flex items-center justify-center backdrop-blur-lg">
-        <p className="text-sm text-gray-300">No track playing 🎵</p>
+      <div
+        style={{
+          background: 'linear-gradient(90deg, rgba(7,7,17,0.95) 0%, rgba(13,13,26,0.98) 100%)',
+          borderTop: '1px solid rgba(168,85,247,0.15)',
+          backdropFilter: 'blur(20px)',
+        }}
+        className="p-4 flex items-center justify-center gap-3"
+      >
+        <div className="equalizer" style={{ opacity: 0.3 }}>
+          <div className="eq-bar" style={{ animationPlayState: 'paused' }} />
+          <div className="eq-bar" style={{ animationPlayState: 'paused' }} />
+          <div className="eq-bar" style={{ animationPlayState: 'paused' }} />
+          <div className="eq-bar" style={{ animationPlayState: 'paused' }} />
+        </div>
+        <p className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>No track playing — select one from the playlist</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-gradient-to-r from-gray-900 via-purple-900 to-pink-900 text-white p-4 shadow-2xl">
+    <div
+      style={{
+        background: 'linear-gradient(90deg, rgba(7,7,17,0.97) 0%, rgba(20,10,35,0.98) 50%, rgba(7,7,17,0.97) 100%)',
+        borderTop: '1px solid rgba(168,85,247,0.25)',
+        backdropFilter: 'blur(30px)',
+        boxShadow: '0 -10px 40px rgba(168,85,247,0.08)',
+      }}
+      className="p-4"
+    >
       <div className="max-w-7xl mx-auto">
-        {/* Track Info */}
+        {/* Track Info Row */}
         <div className="flex items-center gap-4 mb-3">
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-lg truncate">{currentTrack.track.title}</div>
-            <div className="text-sm text-gray-400 truncate">{currentTrack.track.artist}</div>
+          {/* Album art placeholder with neon glow */}
+          <div
+            className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-xl font-bold select-none"
+            style={{
+              background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))',
+              border: '1px solid rgba(168,85,247,0.5)',
+              boxShadow: '0 0 20px rgba(168,85,247,0.3)',
+              fontFamily: 'Syne, sans-serif',
+              color: 'white',
+            }}
+          >
+            {currentTrack.track.title.slice(0, 1)}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex-1 min-w-0">
+            <div
+              className="font-bold text-base truncate"
+              style={{ color: 'var(--text-primary)', fontFamily: 'Syne, sans-serif' }}
+            >
+              {currentTrack.track.title}
+            </div>
+            <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
+              {currentTrack.track.artist}
+            </div>
+          </div>
+
+          {/* Now playing indicator */}
+          <div className="equalizer mx-2 hidden sm:flex">
+            <div className="eq-bar" style={{ animationPlayState: isPaused ? 'paused' : 'running' }} />
+            <div className="eq-bar" style={{ animationPlayState: isPaused ? 'paused' : 'running' }} />
+            <div className="eq-bar" style={{ animationPlayState: isPaused ? 'paused' : 'running' }} />
+            <div className="eq-bar" style={{ animationPlayState: isPaused ? 'paused' : 'running' }} />
+          </div>
+
+          {/* Controls */}
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all transform hover:scale-110 backdrop-blur-sm border border-white/20 shadow-lg"
+              className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))',
+                border: '1px solid rgba(168,85,247,0.5)',
+                boxShadow: isPaused ? '0 0 20px rgba(168,85,247,0.5)' : '0 0 12px rgba(168,85,247,0.2)',
+                color: 'white',
+              }}
               aria-label={isPaused ? 'Play' : 'Pause'}
               data-play-toggle="true"
             >
               {isPaused ? (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M8 5v14l11-7z" />
                 </svg>
               ) : (
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
                 </svg>
               )}
@@ -107,10 +164,23 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
 
             <button
               onClick={onSkip}
-              className="p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all transform hover:scale-110 backdrop-blur-sm border border-white/20 shadow-lg"
+              className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
+              style={{
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)',
+                color: 'var(--text-secondary)',
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(168,85,247,0.5)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'white';
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.1)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-secondary)';
+              }}
               aria-label="Skip to next"
             >
-              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 4l12 8-12 8V4zm13 0v16h2V4h-2z" />
               </svg>
             </button>
@@ -119,19 +189,38 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
 
         {/* Progress Bar */}
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-300 w-10 text-right">{getCurrentTime()}</span>
-          <div 
+          <span className="text-xs w-10 text-right tabular-nums" style={{ color: 'var(--text-muted)' }}>
+            {getCurrentTime()}
+          </span>
+          <div
             onClick={handleProgressClick}
-            className="flex-1 bg-white/10 h-2 rounded-full overflow-hidden backdrop-blur-sm border border-white/10 cursor-pointer hover:h-3 transition-all"
+            className="flex-1 h-1.5 rounded-full overflow-hidden cursor-pointer group relative"
+            style={{ background: 'rgba(255,255,255,0.08)' }}
           >
             <div
-              className="bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 h-full transition-all duration-100 ease-linear shadow-lg pointer-events-none"
-              style={{ width: `${progress}%` }}
+              className="absolute inset-y-0 left-0 rounded-full transition-[width] duration-100 ease-linear"
+              style={{
+                width: `${progress}%`,
+                background: 'linear-gradient(90deg, #a855f7, #06b6d4)',
+                boxShadow: '0 0 10px rgba(168,85,247,0.6)',
+              }}
+            />
+            {/* Thumb dot */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+              style={{
+                left: `calc(${progress}% - 6px)`,
+                background: 'white',
+                boxShadow: '0 0 8px rgba(168,85,247,0.8)',
+              }}
             />
           </div>
-          <span className="text-xs text-gray-300 w-10">{formatDuration(currentTrack.track.duration_seconds)}</span>
+          <span className="text-xs w-10 tabular-nums" style={{ color: 'var(--text-muted)' }}>
+            {formatDuration(currentTrack.track.duration_seconds)}
+          </span>
         </div>
       </div>
     </div>
   );
 }
+

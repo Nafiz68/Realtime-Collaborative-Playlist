@@ -58,25 +58,64 @@ export function PlaylistPanel({ playlist, onVote, onRemove, onReorder, onPlay, a
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-purple-500/10 via-blue-500/10 to-pink-500/10">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">Collaborative Playlist</h2>
-        <p className="text-sm text-gray-600 mt-1">
-          {playlist.length} {playlist.length === 1 ? 'track' : 'tracks'} • {formatTotalDuration(totalDuration)}
-          {autoSort && <span className="ml-2 text-purple-600 font-medium">• 🔥 Auto-sorting</span>}
+      {/* Panel Header */}
+      <div
+        className="flex-shrink-0 p-4 border-b"
+        style={{
+          borderColor: 'rgba(168,85,247,0.15)',
+          background: 'linear-gradient(90deg, rgba(168,85,247,0.06) 0%, rgba(6,182,212,0.04) 50%, rgba(236,72,153,0.06) 100%)',
+        }}
+      >
+        <div className="flex items-center justify-between">
+          <h2
+            className="text-lg font-bold"
+            style={{
+              fontFamily: 'Syne, sans-serif',
+              background: 'linear-gradient(90deg, #a855f7, #ec4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            Queue
+          </h2>
+          {autoSort && (
+            <span
+              className="text-xs font-semibold px-2 py-1 rounded-full"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))',
+                border: '1px solid rgba(168,85,247,0.4)',
+                color: '#d8b4fe',
+              }}
+            >
+              ⚡ Auto-sort
+            </span>
+          )}
+        </div>
+        <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>
+          {playlist.length} {playlist.length === 1 ? 'track' : 'tracks'}
+          {playlist.length > 0 && ` · ${formatTotalDuration(totalDuration)}`}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto overflow-x-visible py-2">
         {playlist.length === 0 ? (
-          <div className="flex items-center justify-center h-full text-gray-400">
-            <div className="text-center">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-xl">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center px-6">
+              <div
+                className="w-20 h-20 mx-auto mb-5 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(168,85,247,0.2), rgba(236,72,153,0.2))',
+                  border: '1px solid rgba(168,85,247,0.3)',
+                  boxShadow: '0 0 30px rgba(168,85,247,0.15)',
+                }}
+              >
+                <svg className="w-10 h-10" style={{ color: 'var(--neon-purple)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
                 </svg>
               </div>
-              <p className="text-lg font-medium text-gray-700">No tracks in playlist</p>
-              <p className="text-sm text-gray-500 mt-1">Add tracks from the library to get started</p>
+              <p className="text-base font-semibold mb-1" style={{ color: 'var(--text-primary)' }}>Queue is empty</p>
+              <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Add tracks from the library to get started</p>
             </div>
           </div>
         ) : (
@@ -111,3 +150,4 @@ export function PlaylistPanel({ playlist, onVote, onRemove, onReorder, onPlay, a
     </div>
   );
 }
+

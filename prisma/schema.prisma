@@ -3,12 +3,20 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
+model Room {
+  id         String          @id
+  code       String          @unique
+  name       String?
+  created_at DateTime        @default(now())
+  tracks     PlaylistTrack[]
+}
+
 model Track {
-  id               String         @id
+  id               String          @id
   title            String
   artist           String
   album            String
@@ -19,17 +27,21 @@ model Track {
 }
 
 model PlaylistTrack {
-  id         String   @id
+  id         String    @id
   track_id   String
+  room_id    String
   position   Float
-  votes      Int      @default(0)
+  votes      Int       @default(0)
   added_by   String
-  added_at   DateTime @default(now())
-  is_playing Boolean  @default(false)
+  added_at   DateTime  @default(now())
+  is_playing Boolean   @default(false)
   played_at  DateTime?
 
   track      Track    @relation(fields: [track_id], references: [id])
+  room       Room     @relation(fields: [room_id], references: [id])
 
-  @@unique([track_id])
+  @@unique([track_id, room_id])
   @@index([position])
+  @@index([room_id])
 }
+

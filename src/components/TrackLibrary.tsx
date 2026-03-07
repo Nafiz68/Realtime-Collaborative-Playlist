@@ -83,27 +83,65 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
 
   return (
     <div className="flex flex-col h-full">
-      <div className="p-4 border-b border-white/20 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-pink-500/10">
-        <h2 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">Track Library</h2>
+      {/* Library Header */}
+      <div
+        className="flex-shrink-0 p-4 border-b"
+        style={{
+          borderColor: 'rgba(168,85,247,0.15)',
+          background: 'linear-gradient(90deg, rgba(6,182,212,0.06) 0%, rgba(168,85,247,0.06) 100%)',
+        }}
+      >
+        <h2
+          className="text-lg font-bold mb-3"
+          style={{
+            fontFamily: 'Syne, sans-serif',
+            background: 'linear-gradient(90deg, #06b6d4, #a855f7)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
+          Library
+        </h2>
         
-        <div ref={searchRef} className="relative mb-4">
-          <input
-            type="text"
-            placeholder="Search tracks or artists..."
-            value={searchTerm}
-            onChange={(e) => {
-              onSearchChange(e.target.value);
-              setShowSuggestions(true);
-              setSelectedSuggestionIndex(-1);
-            }}
-            onFocus={() => searchTerm && setShowSuggestions(true)}
-            onKeyDown={handleKeyDown}
-            className="w-full px-4 py-2 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent placeholder-gray-400 text-gray-900 font-medium transition-all shadow-sm"
-          />
+        {/* Search */}
+        <div ref={searchRef} className="relative mb-3">
+          <div className="relative">
+            <svg
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+              style={{ color: 'var(--text-muted)' }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search tracks or artists..."
+              value={searchTerm}
+              onChange={(e) => {
+                onSearchChange(e.target.value);
+                setShowSuggestions(true);
+                setSelectedSuggestionIndex(-1);
+              }}
+              onFocus={() => searchTerm && setShowSuggestions(true)}
+              onKeyDown={handleKeyDown}
+              className="neon-input w-full pl-9 pr-4 py-2.5 rounded-xl text-sm font-medium"
+            />
+          </div>
 
           {/* Auto-suggestions dropdown */}
           {showSuggestions && suggestions.length > 0 && (
-            <div className="absolute top-full mt-1 w-full bg-white/95 backdrop-blur-md border-2 border-purple-300 rounded-xl shadow-2xl z-50 max-h-80 overflow-y-auto">
+            <div
+              className="absolute top-full mt-1 w-full rounded-xl shadow-2xl z-50 max-h-72 overflow-y-auto"
+              style={{
+                background: 'rgba(13,13,26,0.98)',
+                border: '1px solid rgba(168,85,247,0.35)',
+                backdropFilter: 'blur(20px)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(168,85,247,0.1)',
+              }}
+            >
               {suggestions.map((track, index) => (
                 <div
                   key={track.id}
@@ -112,17 +150,35 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
                     setShowSuggestions(false);
                     setSelectedSuggestionIndex(-1);
                   }}
-                  className={`p-3 cursor-pointer transition-all ${
-                    index === selectedSuggestionIndex
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                      : 'hover:bg-purple-50'
-                  } ${index !== suggestions.length - 1 ? 'border-b border-gray-200' : ''}`}
+                  className="p-3 cursor-pointer transition-all"
+                  style={{
+                    background: index === selectedSuggestionIndex
+                      ? 'linear-gradient(90deg, rgba(168,85,247,0.2), rgba(6,182,212,0.15))'
+                      : 'transparent',
+                    borderBottom: index !== suggestions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
+                  }}
+                  onMouseEnter={e => {
+                    if (index !== selectedSuggestionIndex) {
+                      (e.currentTarget as HTMLDivElement).style.background = 'rgba(168,85,247,0.1)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (index !== selectedSuggestionIndex) {
+                      (e.currentTarget as HTMLDivElement).style.background = 'transparent';
+                    }
+                  }}
                 >
-                  <div className={`font-medium ${index === selectedSuggestionIndex ? 'text-white' : 'text-gray-900'}`}>
+                  <div
+                    className="font-medium text-sm"
+                    style={{ color: index === selectedSuggestionIndex ? '#d8b4fe' : 'var(--text-primary)' }}
+                  >
                     {track.title}
                   </div>
-                  <div className={`text-sm ${index === selectedSuggestionIndex ? 'text-white/90' : 'text-gray-600'}`}>
-                    {track.artist} • {track.album}
+                  <div
+                    className="text-xs mt-0.5"
+                    style={{ color: index === selectedSuggestionIndex ? '#a5b4fc' : 'var(--text-muted)' }}
+                  >
+                    {track.artist} · {track.album}
                   </div>
                 </div>
               ))}
@@ -130,15 +186,14 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
           )}
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        {/* Genre Pills */}
+        <div className="flex gap-1.5 flex-wrap">
           {genres.map(genre => (
             <button
               key={genre}
               onClick={() => setSelectedGenre(genre)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                selectedGenre === genre
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+                selectedGenre === genre ? 'genre-pill-active' : 'genre-pill'
               }`}
             >
               {genre}
@@ -147,38 +202,97 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
-        {filteredTracks.map(track => {
-          const inPlaylist = playlistTrackIds.has(track.id);
-          const isAdding = addingTrackId === track.id;
+      {/* Track List */}
+      <div className="flex-1 overflow-y-auto py-2">
+        {filteredTracks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--text-muted)' }}>
+            <div className="text-2xl">🔍</div>
+            <p className="text-xs text-center">No tracks found.<br />Try a different search.</p>
+          </div>
+        ) : (
+          filteredTracks.map(track => {
+            const inPlaylist = playlistTrackIds.has(track.id);
+            const isAdding = addingTrackId === track.id;
 
-          return (
-            <div
-              key={track.id}
-              className="p-3 mx-2 my-1.5 bg-white/60 backdrop-blur-sm border border-white/30 rounded-xl hover:bg-white/80 hover:shadow-lg transition-all transform hover:scale-[1.01] flex items-center gap-3"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="font-medium text-gray-900 truncate">{track.title}</div>
-                <div className="text-sm text-gray-600 truncate">{track.artist}</div>
-                <div className="text-xs text-gray-500">{track.album} • {formatDuration(track.duration_seconds)}</div>
-              </div>
-
-              <button
-                onClick={() => handleAddTrack(track.id)}
-                disabled={inPlaylist || isAdding}
-                className={`px-4 py-2 rounded-lg font-medium text-sm transition-all transform hover:scale-105 ${
-                  inPlaylist
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : isAdding
-                    ? 'bg-gradient-to-r from-blue-400 to-purple-400 text-white shadow-lg'
-                    : 'bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:shadow-lg hover:shadow-blue-500/50 active:scale-95'
-                }`}
+            return (
+              <div
+                key={track.id}
+                className="group flex items-center gap-3 p-3 mx-2 my-1 rounded-xl transition-all cursor-default"
+                style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLDivElement).style.background = 'rgba(168,85,247,0.06)';
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(168,85,247,0.2)';
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLDivElement).style.background = 'rgba(255,255,255,0.02)';
+                  (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.05)';
+                }}
               >
-                {inPlaylist ? 'In Playlist' : isAdding ? 'Adding...' : 'Add'}
-              </button>
-            </div>
-          );
-        })}
+                {/* Track letter avatar */}
+                <div
+                  className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold select-none"
+                  style={{
+                    background: inPlaylist
+                      ? 'rgba(168,85,247,0.15)'
+                      : 'rgba(255,255,255,0.05)',
+                    border: `1px solid ${inPlaylist ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                    color: inPlaylist ? '#a855f7' : 'var(--text-muted)',
+                  }}
+                >
+                  {track.title.slice(0, 1)}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-xs truncate" style={{ color: 'var(--text-primary)' }}>{track.title}</div>
+                  <div className="text-xs truncate" style={{ color: 'var(--text-secondary)' }}>{track.artist}</div>
+                  <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {track.album} · {formatDuration(track.duration_seconds)}
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleAddTrack(track.id)}
+                  disabled={inPlaylist || isAdding}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed"
+                  style={
+                    inPlaylist
+                      ? {
+                          background: 'rgba(168,85,247,0.1)',
+                          border: '1px solid rgba(168,85,247,0.2)',
+                          color: 'rgba(168,85,247,0.5)',
+                        }
+                      : isAdding
+                      ? {
+                          background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(6,182,212,0.4))',
+                          border: '1px solid rgba(168,85,247,0.5)',
+                          color: 'white',
+                        }
+                      : {
+                          background: 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2))',
+                          border: '1px solid rgba(6,182,212,0.4)',
+                          color: '#67e8f9',
+                          boxShadow: '0 0 0 0 rgba(6,182,212,0.4)',
+                        }
+                  }
+                  onMouseEnter={e => {
+                    if (!inPlaylist && !isAdding) {
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 0 15px rgba(6,182,212,0.3)';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(6,182,212,0.35), rgba(168,85,247,0.35))';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!inPlaylist && !isAdding) {
+                      (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                      (e.currentTarget as HTMLButtonElement).style.background = 'linear-gradient(135deg, rgba(6,182,212,0.2), rgba(168,85,247,0.2))';
+                    }
+                  }}
+                >
+                  {inPlaylist ? '✓ Added' : isAdding ? '...' : '+ Add'}
+                </button>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

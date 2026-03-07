@@ -10,10 +10,7 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
 
   if (direction !== "up" && direction !== "down") {
     return NextResponse.json({
-      error: {
-        code: "VALIDATION_ERROR",
-        message: 'direction must be "up" or "down"'
-      }
+      error: { code: "VALIDATION_ERROR", message: 'direction must be "up" or "down"' }
     }, { status: 400 });
   }
 
@@ -22,11 +19,11 @@ export async function POST(request: Request, props: { params: Promise<{ id: stri
     data: {
       votes: direction === "up" ? { increment: 1 } : { decrement: 1 }
     },
-    include: { track: true }
+    include: { track: true, room: true }
   });
 
-  // Broadcast event
-  sseManager.broadcast({ type: 'track.voted', item: { id, votes: updated.votes } });
+  // Broadcast scoped to the room
+  sseManager.broadcast({ type: 'track.voted', item: { id, votes: updated.votes } }, updated.room.code);
 
   return NextResponse.json(updated, { status: 200 });
 }

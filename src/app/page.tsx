@@ -1,66 +1,61 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Track, PlaylistTrack, SSEEvent } from '@/types';
 import { TrackLibrary } from '@/components/TrackLibrary';
 import { PlaylistPanel } from '@/components/PlaylistPanel';
 import { NowPlayingBar } from '@/components/NowPlayingBar';
+import { RoomGate } from '@/components/RoomGate';
+import { ShareModal } from '@/components/ShareModal';
 import { useSSE } from '@/hooks/useSSE';
 import { ArrowUpDown, Download, Clock } from 'lucide-react';
 
-export default function Home() {
+// Inner component that reads search params
+function PlaylistApp({ roomCode }: { roomCode: string }) {
   const [tracks, setTracks] = useState<Track[]>([]);
   const [playlist, setPlaylist] = useState<PlaylistTrack[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const [autoSort, setAutoSort] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [showShare, setShowShare] = useState(false);
   const [history, setHistory] = useState<PlaylistTrack[]>([]);
 
-  // Fetch initial data
+  // Fetch initial data scoped to the room
   useEffect(() => {
     Promise.all([
       fetch('/api/tracks').then(res => res.json()),
-      fetch('/api/playlist').then(res => res.json())
+      fetch(`/api/playlist?code=${roomCode}`).then(res => res.json())
     ]).then(([tracksData, playlistData]) => {
-      setTracks(tracksData);
-      setPlaylist(playlistData);
+      setTracks(Array.isArray(tracksData) ? tracksData : []);
+      setPlaylist(Array.isArray(playlistData) ? playlistData : []);
     });
-  }, []);
+  }, [roomCode]);
 
   // Auto-sort by votes
   useEffect(() => {
     if (!autoSort) return;
-    
     const sortedPlaylist = [...playlist].sort((a, b) => {
-      // Sort by votes descending, then by position
       if (b.votes !== a.votes) return b.votes - a.votes;
       return a.position - b.position;
     });
-
-    // Update positions if order changed
-    const needsUpdate = sortedPlaylist.some((item, idx) => 
-      item.id !== playlist[idx]?.id
-    );
-
+    const needsUpdate = sortedPlaylist.some((item, idx) => item.id !== playlist[idx]?.id);
     if (needsUpdate) {
       sortedPlaylist.forEach((item, idx) => {
         const newPosition = idx + 1;
-        if (item.position !== newPosition) {
-          handleReorder(item.id, newPosition);
-        }
+        if (item.position !== newPosition) handleReorder(item.id, newPosition);
       });
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playlist, autoSort]);
 
   // Define handleSkip before keyboard shortcuts
   const handleSkip = useCallback(async () => {
     const currentIndex = playlist.findIndex(item => item.is_playing);
     if (currentIndex === -1) return;
-
     const currentTrack = playlist[currentIndex];
     const nextTrack = playlist[currentIndex + 1];
-
     if (nextTrack) {
       await fetch(`/api/playlist/${nextTrack.id}`, {
         method: 'PATCH',
@@ -68,7 +63,6 @@ export default function Home() {
         body: JSON.stringify({ is_playing: true })
       });
     } else {
-      // Stop playing if no next track
       await fetch(`/api/playlist/${currentTrack.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -80,13 +74,10 @@ export default function Home() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      // Don't trigger if typing in input
       if (e.target instanceof HTMLInputElement) return;
-
-      switch(e.key) {
+      switch (e.key) {
         case ' ':
           e.preventDefault();
-          // Toggle play/pause (will implement in NowPlayingBar)
           const playButton = document.querySelector('[data-play-toggle]') as HTMLButtonElement;
           playButton?.click();
           break;
@@ -96,7 +87,6 @@ export default function Home() {
           break;
         case 'ArrowLeft':
           e.preventDefault();
-          // Previous track
           const currentIndex = playlist.findIndex(item => item.is_playing);
           if (currentIndex > 0) {
             const prevTrack = playlist[currentIndex - 1];
@@ -109,7 +99,6 @@ export default function Home() {
           break;
       }
     };
-
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
   }, [playlist, handleSkip]);
@@ -117,53 +106,37 @@ export default function Home() {
   // Handle SSE events
   const handleSSEEvent = useCallback((event: SSEEvent) => {
     if (event.type === 'ping') return;
-
-    console.log('SSE Event:', event);
-
     switch (event.type) {
       case 'track.added':
         setPlaylist(prev => {
-          // Avoid duplicates
           if (prev.some(item => item.id === event.item.id)) return prev;
           return [...prev, event.item].sort((a, b) => a.position - b.position);
         });
         break;
-
       case 'track.removed':
         setPlaylist(prev => prev.filter(item => item.id !== event.id));
         break;
-
       case 'track.moved':
-        setPlaylist(prev => prev.map(item =>
-          item.id === event.item.id
-            ? { ...item, position: event.item.position }
-            : item
-        ).sort((a, b) => a.position - b.position));
+        setPlaylist(prev =>
+          prev.map(item =>
+            item.id === event.item.id ? { ...item, position: event.item.position } : item
+          ).sort((a, b) => a.position - b.position)
+        );
         break;
-
       case 'track.voted':
-        setPlaylist(prev => prev.map(item =>
-          item.id === event.item.id
-            ? { ...item, votes: event.item.votes }
-            : item
-        ));
+        setPlaylist(prev =>
+          prev.map(item =>
+            item.id === event.item.id ? { ...item, votes: event.item.votes } : item
+          )
+        );
         break;
-
       case 'track.playing':
         setPlaylist(prev => {
-          const updated = prev.map(item => ({
-            ...item,
-            is_playing: item.id === event.id
-          }));
-          
-          // Track history when a track stops playing
-          const stoppedPlaying = prev.find(item => 
-            item.is_playing && item.id !== event.id
-          );
+          const updated = prev.map(item => ({ ...item, is_playing: item.id === event.id }));
+          const stoppedPlaying = prev.find(item => item.is_playing && item.id !== event.id);
           if (stoppedPlaying) {
             setHistory(h => [stoppedPlaying, ...h].slice(0, 10));
           }
-          
           return updated;
         });
         break;
@@ -172,19 +145,19 @@ export default function Home() {
 
   const { connectionStatus: sseStatus } = useSSE({
     onEvent: handleSSEEvent,
+    roomCode,
     onConnectionChange: (connected) => {
       setConnectionStatus(connected ? 'connected' : 'disconnected');
     }
   });
 
-  // API Actions
+  // API Actions — all include ?code= param on playlist routes
   const handleAddTrack = async (trackId: string) => {
-    const response = await fetch('/api/playlist', {
+    const response = await fetch(`/api/playlist?code=${roomCode}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ track_id: trackId, added_by: 'Anonymous' })
     });
-
     if (!response.ok) {
       const error = await response.json();
       alert(error.error.message);
@@ -201,26 +174,22 @@ export default function Home() {
   };
 
   const handleRemove = async (id: string) => {
-    await fetch(`/api/playlist/${id}`, {
-      method: 'DELETE'
-    });
+    await fetch(`/api/playlist/${id}`, { method: 'DELETE' });
   };
 
   const handleReorder = async (id: string, newPosition: number) => {
-    // Optimistic update
-    setPlaylist(prev => prev.map(item =>
-      item.id === id ? { ...item, position: newPosition } : item
-    ).sort((a, b) => a.position - b.position));
-
+    setPlaylist(prev =>
+      prev.map(item => item.id === id ? { ...item, position: newPosition } : item)
+        .sort((a, b) => a.position - b.position)
+    );
     try {
       await fetch(`/api/playlist/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ position: newPosition })
       });
-    } catch (error) {
-      // Revert on error - refetch
-      const playlistData = await fetch('/api/playlist').then(res => res.json());
+    } catch {
+      const playlistData = await fetch(`/api/playlist?code=${roomCode}`).then(res => res.json());
       setPlaylist(playlistData);
     }
   };
@@ -235,10 +204,10 @@ export default function Home() {
 
   const playlistTrackIds = new Set(playlist.map(item => item.track.id));
 
-  // Export playlist
   const handleExport = () => {
     const exportData = {
-      name: 'My Playlist',
+      name: `Room ${roomCode} Playlist`,
+      code: roomCode,
       created: new Date().toISOString(),
       tracks: playlist.map(item => ({
         title: item.track.title,
@@ -248,14 +217,11 @@ export default function Home() {
         position: item.position
       }))
     };
-
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-      type: 'application/json' 
-    });
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `playlist-${Date.now()}.json`;
+    a.download = `playlist-${roomCode}-${Date.now()}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -263,70 +229,110 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50">
+    <div className="relative flex flex-col h-screen overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+      {/* Animated Background Blobs */}
+      <div className="bg-blobs">
+        <div className="bg-blob bg-blob-1" />
+        <div className="bg-blob bg-blob-2" />
+        <div className="bg-blob bg-blob-3" />
+      </div>
+
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-lg shadow-lg border-b border-white/20 p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+      <header className="relative z-10 glass-card border-b border-purple-500/20 p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-[0_4px_30px_rgba(168,85,247,0.1)]">
         <div className="flex-1 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-purple-600 via-blue-600 to-pink-600 bg-clip-text text-transparent truncate">Realtime Collaborative Playlist</h1>
-          <p className="text-xs sm:text-sm text-gray-600 truncate">Add, vote, and reorder tracks in realtime • Space: play/pause • ←/→: prev/next</p>
+          <h1
+            className="text-xl sm:text-2xl font-bold truncate"
+            style={{
+              fontFamily: 'Syne, var(--font-syne), sans-serif',
+              background: 'linear-gradient(90deg, #a855f7, #06b6d4, #ec4899)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
+            ◈ Collab Playlist
+          </h1>
+          <p className="text-xs sm:text-sm truncate" style={{ color: 'var(--text-muted)' }}>
+            Add · Vote · Reorder in realtime &nbsp;·&nbsp; Space: play/pause &nbsp;·&nbsp; ←/→: prev/next
+          </p>
         </div>
-        
+
         {/* Controls & Status */}
-        <div className="flex items-center gap-2 sm:gap-4 flex-wrap">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Share Button */}
+          <button
+            onClick={() => setShowShare(true)}
+            className="btn-neon flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium"
+            title={`Share room code: ${roomCode}`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            <span className="hidden sm:inline">Share</span>
+            <span
+              className="text-xs font-bold px-1.5 py-0.5 rounded-md"
+              style={{
+                background: 'rgba(168,85,247,0.3)',
+                color: '#d8b4fe',
+                fontFamily: 'Syne, var(--font-syne), monospace',
+                letterSpacing: '0.08em',
+              }}
+            >
+              {roomCode}
+            </span>
+          </button>
+
           {/* Auto-sort toggle */}
           <button
             onClick={() => setAutoSort(!autoSort)}
-            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-all transform hover:scale-105 ${
-              autoSort 
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/50' 
-                : 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-md'
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${autoSort ? 'btn-neon-active' : 'btn-neon'}`}
             title="Auto-sort by votes"
           >
-            <ArrowUpDown size={14} className="sm:w-4 sm:h-4" />
+            <ArrowUpDown size={14} />
             <span className="hidden sm:inline">Auto-sort</span>
           </button>
 
           {/* History toggle */}
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium transition-all transform hover:scale-105 ${
-              showHistory 
-                ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-lg shadow-blue-500/50' 
-                : 'bg-white/60 text-gray-700 hover:bg-white/80 shadow-md'
-            }`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium transition-all ${showHistory ? 'btn-neon-active' : 'btn-neon'}`}
             title="Show history"
           >
-            <Clock size={14} className="sm:w-4 sm:h-4" />
+            <Clock size={14} />
             <span className="hidden sm:inline">History ({history.length})</span>
           </button>
 
           {/* Export button */}
           <button
             onClick={handleExport}
-            className="flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs sm:text-sm font-medium bg-white/60 text-gray-700 hover:bg-white/80 shadow-md transition-all transform hover:scale-105"
+            className="btn-neon flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs sm:text-sm font-medium"
             title="Export playlist"
           >
-            <Download size={14} className="sm:w-4 sm:h-4" />
+            <Download size={14} />
             <span className="hidden sm:inline">Export</span>
           </button>
 
           {/* Connection Status */}
-          <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full animate-pulse ${
-              sseStatus === 'connected' ? 'bg-green-500 shadow-lg shadow-green-500/50' : 
-              sseStatus === 'connecting' ? 'bg-yellow-500 shadow-lg shadow-yellow-500/50' : 
-              'bg-red-500 shadow-lg shadow-red-500/50'
-            }`} />
-            <span className="text-xs sm:text-sm text-gray-600 capitalize hidden sm:inline">{sseStatus}</span>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            <div
+              className="w-2 h-2 rounded-full"
+              style={{
+                background: sseStatus === 'connected' ? '#10b981' : sseStatus === 'connecting' ? '#facc15' : '#f43f5e',
+                animation: sseStatus === 'connected' ? 'connectedPulse 2s ease-in-out infinite' : sseStatus === 'connecting' ? 'connectingPulse 1s ease-in-out infinite' : 'none',
+                boxShadow: sseStatus === 'connected' ? '0 0 8px #10b981' : sseStatus === 'connecting' ? '0 0 8px #facc15' : '0 0 8px #f43f5e',
+              }}
+            />
+            <span className="text-xs font-medium capitalize hidden sm:inline" style={{ color: 'var(--text-secondary)' }}>
+              {sseStatus === 'connected' ? 'Connected' : sseStatus === 'connecting' ? 'Connecting' : 'Disconnected'}
+            </span>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col sm:flex-row overflow-hidden">
+      <div className="relative z-10 flex-1 flex flex-col sm:flex-row overflow-hidden">
         {/* Track Library */}
-        <div className="hidden sm:block sm:w-1/3 border-r border-white/20 bg-white/40 backdrop-blur-md overflow-hidden">
+        <div className="hidden sm:flex sm:w-[320px] flex-col border-r border-purple-500/15 overflow-hidden" style={{ background: 'rgba(13,13,26,0.7)', backdropFilter: 'blur(20px)' }}>
           <TrackLibrary
             tracks={tracks}
             playlistTrackIds={playlistTrackIds}
@@ -337,7 +343,10 @@ export default function Home() {
         </div>
 
         {/* Playlist Panel */}
-        <div className={`flex-1 bg-white/40 backdrop-blur-md overflow-hidden ${showHistory ? 'border-r border-white/20' : ''}`}>
+        <div
+          className={`flex-1 overflow-hidden ${showHistory ? 'border-r border-purple-500/15' : ''}`}
+          style={{ background: 'rgba(7,7,17,0.5)', backdropFilter: 'blur(20px)' }}
+        >
           <PlaylistPanel
             playlist={playlist}
             onVote={handleVote}
@@ -350,38 +359,45 @@ export default function Home() {
 
         {/* History Panel */}
         {showHistory && (
-          <div className="hidden lg:block w-80 bg-white/40 backdrop-blur-md overflow-y-auto border-l border-white/20">
-            <div className="sticky top-0 bg-white/60 backdrop-blur-md border-b border-white/20 p-4">
-              <h2 className="text-lg font-semibold text-gray-900">Recently Played</h2>
-              <p className="text-sm text-gray-600 mt-1">Last {history.length} tracks</p>
+          <div className="hidden lg:flex flex-col w-72 border-l border-purple-500/15 overflow-hidden" style={{ background: 'rgba(13,13,26,0.7)', backdropFilter: 'blur(20px)' }}>
+            <div className="p-4 border-b border-purple-500/15 flex-shrink-0" style={{ background: 'rgba(168,85,247,0.05)' }}>
+              <h2 className="text-base font-bold" style={{ background: 'linear-gradient(90deg, #a855f7, #06b6d4)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>
+                Recently Played
+              </h2>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Last {history.length} tracks</p>
             </div>
-            <div className="p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2">
               {history.length === 0 ? (
-                <p className="text-sm text-gray-500 text-center py-8">No history yet</p>
+                <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--text-muted)' }}>
+                  <div className="text-3xl">🎵</div>
+                  <p className="text-xs text-center">No history yet.<br />Play a track to get started.</p>
+                </div>
               ) : (
                 history.map((item, idx) => (
                   <div
                     key={`${item.id}-${idx}`}
-                    className="p-3 bg-white/60 backdrop-blur-sm rounded-xl hover:bg-white/80 transition-all transform hover:scale-[1.02] hover:shadow-lg"
+                    className="glass-card rounded-xl p-3 transition-all hover:scale-[1.02]"
                   >
-                    <div className="flex items-start gap-3">
-                      <img
-                        src={item.track.cover_url || 'https://via.placeholder.com/48'}
-                        alt={item.track.title}
-                        className="w-12 h-12 rounded object-cover"
-                      />
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold"
+                        style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))', border: '1px solid rgba(168,85,247,0.3)' }}
+                      >
+                        {item.track.title.slice(0, 1)}
+                      </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-sm text-gray-900 truncate">
+                        <h4 className="font-medium text-xs truncate" style={{ color: 'var(--text-primary)' }}>
                           {item.track.title}
                         </h4>
-                        <p className="text-xs text-gray-600 truncate">
+                        <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
                           {item.track.artist}
                         </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-gray-500">
-                            {item.votes} votes
-                          </span>
-                        </div>
+                        <span
+                          className="text-xs font-semibold"
+                          style={{ color: item.votes > 0 ? '#10b981' : item.votes < 0 ? '#f43f5e' : 'var(--text-muted)' }}
+                        >
+                          {item.votes > 0 && '+'}{item.votes} votes
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -393,7 +409,38 @@ export default function Home() {
       </div>
 
       {/* Now Playing Bar */}
-      <NowPlayingBar playlist={playlist} onSkip={handleSkip} />
+      <div className="relative z-10">
+        <NowPlayingBar playlist={playlist} onSkip={handleSkip} />
+      </div>
+
+      {/* Share Modal */}
+      {showShare && (
+        <ShareModal code={roomCode} onClose={() => setShowShare(false)} />
+      )}
     </div>
+  );
+}
+
+// Suspense wrapper to safely read searchParams
+function HomeInner() {
+  const searchParams = useSearchParams();
+  const roomCode = searchParams.get('code') || '';
+
+  if (!roomCode) {
+    return <RoomGate />;
+  }
+
+  return <PlaylistApp roomCode={roomCode} />;
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#070711' }}>
+        <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <HomeInner />
+    </Suspense>
   );
 }

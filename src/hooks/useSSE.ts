@@ -5,9 +5,10 @@ import type { SSEEvent } from '@/types';
 interface UseSSEOptions {
   onEvent: (event: SSEEvent) => void;
   onConnectionChange?: (connected: boolean) => void;
+  roomCode: string;
 }
 
-export function useSSE({ onEvent, onConnectionChange }: UseSSEOptions) {
+export function useSSE({ onEvent, onConnectionChange, roomCode }: UseSSEOptions) {
   const eventSourceRef = useRef<EventSource | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -37,11 +38,12 @@ export function useSSE({ onEvent, onConnectionChange }: UseSSEOptions) {
 
     setConnectionStatus('connecting');
     
-    const eventSource = new EventSource('/api/stream');
+    // Connect to room-scoped SSE stream
+    const eventSource = new EventSource(`/api/stream?code=${roomCode}`);
     eventSourceRef.current = eventSource;
 
     eventSource.onopen = () => {
-      console.log('SSE connection opened');
+      console.log(`SSE connection opened for room ${roomCode}`);
       setConnectionStatus('connected');
       onConnectionChangeRef.current?.(true);
       reconnectAttemptsRef.current = 0;
@@ -83,7 +85,7 @@ export function useSSE({ onEvent, onConnectionChange }: UseSSEOptions) {
         }
       }, backoffDelay);
     };
-  }, []);
+  }, [roomCode]);
 
   useEffect(() => {
     isUnmountingRef.current = false;
