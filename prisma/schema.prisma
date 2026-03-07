@@ -3,12 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Room {
-  id         String          @id
+  id         String          @id @default(cuid())
   code       String          @unique
   name       String?
   created_at DateTime        @default(now())
@@ -27,7 +27,7 @@ model Track {
 }
 
 model PlaylistTrack {
-  id         String    @id
+  id         String    @id @default(cuid())
   track_id   String
   room_id    String
   position   Float

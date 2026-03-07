@@ -93,7 +93,6 @@ export async function POST(request: Request) {
     // Create PlaylistTrack scoped to this room
     const playlistTrack = await prisma.playlistTrack.create({
       data: {
-        id: `playlist-item-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
         track_id,
         room_id: room.id,
         position,

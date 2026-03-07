@@ -27,7 +27,6 @@ export async function POST() {
 
     const room = await prisma.room.create({
       data: {
-        id: `room-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
         code,
       },
     });
