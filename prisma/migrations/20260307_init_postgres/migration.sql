@@ -1,5 +1,5 @@
--- CreateTable
-CREATE TABLE "Room" (
+-- CreateTable (IF NOT EXISTS to handle re-runs safely)
+CREATE TABLE IF NOT EXISTS "Room" (
     "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "name" TEXT,
@@ -9,7 +9,7 @@ CREATE TABLE "Room" (
 );
 
 -- CreateTable
-CREATE TABLE "Track" (
+CREATE TABLE IF NOT EXISTS "Track" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "artist" TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE "Track" (
 );
 
 -- CreateTable
-CREATE TABLE "PlaylistTrack" (
+CREATE TABLE IF NOT EXISTS "PlaylistTrack" (
     "id" TEXT NOT NULL,
     "track_id" TEXT NOT NULL,
     "room_id" TEXT NOT NULL,
@@ -37,19 +37,32 @@ CREATE TABLE "PlaylistTrack" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Room_code_key" ON "Room"("code");
+CREATE UNIQUE INDEX IF NOT EXISTS "Room_code_key" ON "Room"("code");
 
 -- CreateIndex
-CREATE INDEX "PlaylistTrack_position_idx" ON "PlaylistTrack"("position");
+CREATE INDEX IF NOT EXISTS "PlaylistTrack_position_idx" ON "PlaylistTrack"("position");
 
 -- CreateIndex
-CREATE INDEX "PlaylistTrack_room_id_idx" ON "PlaylistTrack"("room_id");
+CREATE INDEX IF NOT EXISTS "PlaylistTrack_room_id_idx" ON "PlaylistTrack"("room_id");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PlaylistTrack_track_id_room_id_key" ON "PlaylistTrack"("track_id", "room_id");
+CREATE UNIQUE INDEX IF NOT EXISTS "PlaylistTrack_track_id_room_id_key" ON "PlaylistTrack"("track_id", "room_id");
 
--- AddForeignKey
-ALTER TABLE "PlaylistTrack" ADD CONSTRAINT "PlaylistTrack_track_id_fkey" FOREIGN KEY ("track_id") REFERENCES "Track"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+-- AddForeignKey (DO nothing if already exists)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'PlaylistTrack_track_id_fkey'
+  ) THEN
+    ALTER TABLE "PlaylistTrack" ADD CONSTRAINT "PlaylistTrack_track_id_fkey"
+      FOREIGN KEY ("track_id") REFERENCES "Track"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
 
--- AddForeignKey
-ALTER TABLE "PlaylistTrack" ADD CONSTRAINT "PlaylistTrack_room_id_fkey" FOREIGN KEY ("room_id") REFERENCES "Room"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'PlaylistTrack_room_id_fkey'
+  ) THEN
+    ALTER TABLE "PlaylistTrack" ADD CONSTRAINT "PlaylistTrack_room_id_fkey"
+      FOREIGN KEY ("room_id") REFERENCES "Room"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+  END IF;
+END $$;
