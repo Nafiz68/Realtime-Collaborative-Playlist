@@ -1,7 +1,7 @@
 'use client';
 
 import { PlaylistTrack } from '@/types';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 
 interface NowPlayingBarProps {
   playlist: PlaylistTrack[];
@@ -11,50 +11,68 @@ interface NowPlayingBarProps {
 export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
   const [progress, setProgress] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [manualProgress, setManualProgress] = useState<number | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   const currentTrack = playlist.find(item => item.is_playing);
 
-  // Reset progress when track changes
+  // Reset and load new track when it changes
   useEffect(() => {
-    if (currentTrack) {
+    if (currentTrack?.track.preview_url && audioRef.current) {
+      audioRef.current.src = currentTrack.track.preview_url;
+      audioRef.current.load();
       setProgress(0);
-      setManualProgress(null);
+      setIsPaused(false);
+      // Autoplay when track changes
+      audioRef.current.play().catch(err => console.error('Autoplay failed:', err));
     }
   }, [currentTrack?.id]);
 
+  // Sync play/pause state with audio element
   useEffect(() => {
-    if (!currentTrack || isPaused) {
-      return;
-    }
-
-    const duration = currentTrack.track.duration_seconds * 1000;
-    const startTime = Date.now();
-    const startProgress = manualProgress ?? 0;
+    if (!audioRef.current) return;
     
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const newProgress = Math.min(startProgress + (elapsed / duration) * 100, 100);
-      setProgress(newProgress);
+    if (isPaused) {
+      audioRef.current.pause();
+    } else if (currentTrack?.track.preview_url) {
+      audioRef.current.play().catch(err => console.error('Play failed:', err));
+    }
+  }, [isPaused, currentTrack]);
 
-      if (newProgress >= 100) {
-        // Auto-advance to next track
-        onSkip();
+  // Update progress from audio element
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const updateProgress = () => {
+      if (audio.duration) {
+        setProgress((audio.currentTime / audio.duration) * 100);
       }
-    }, 100);
+    };
 
-    return () => clearInterval(interval);
-  }, [currentTrack, isPaused, onSkip, manualProgress]);
+    const handleEnded = () => {
+      onSkip();
+    };
+
+    audio.addEventListener('timeupdate', updateProgress);
+    audio.addEventListener('ended', handleEnded);
+
+    return () => {
+      audio.removeEventListener('timeupdate', updateProgress);
+      audio.removeEventListener('ended', handleEnded);
+    };
+  }, [onSkip]);
 
   const handleProgressClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!currentTrack) return;
+    if (!currentTrack || !audioRef.current) return;
     
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const newProgress = (clickX / rect.width) * 100;
     
-    setManualProgress(newProgress);
-    setProgress(newProgress);
+    const audio = audioRef.current;
+    if (audio.duration) {
+      audio.currentTime = (newProgress / 100) * audio.duration;
+    }
   };
 
   const formatDuration = (seconds: number) => {
@@ -64,9 +82,13 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
   };
 
   const getCurrentTime = () => {
-    if (!currentTrack) return '0:00';
-    const elapsed = Math.floor((progress / 100) * currentTrack.track.duration_seconds);
-    return formatDuration(elapsed);
+    if (!audioRef.current || !audioRef.current.duration) return '0:00';
+    return formatDuration(Math.floor(audioRef.current.currentTime));
+  };
+
+  const getDuration = () => {
+    if (!audioRef.current || !audioRef.current.duration) return '0:00';
+    return formatDuration(Math.floor(audioRef.current.duration));
   };
 
   if (!currentTrack) {
@@ -90,6 +112,8 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
     );
   }
 
+  const hasPreview = currentTrack.track.preview_url;
+
   return (
     <div
       style={{
@@ -100,22 +124,37 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
       }}
       className="p-4"
     >
+      {/* Hidden audio element */}
+      <audio ref={audioRef} />
+      
       <div className="max-w-7xl mx-auto">
         {/* Track Info Row */}
         <div className="flex items-center gap-4 mb-3">
-          {/* Album art placeholder with neon glow */}
-          <div
-            className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-xl font-bold select-none"
-            style={{
-              background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))',
-              border: '1px solid rgba(168,85,247,0.5)',
-              boxShadow: '0 0 20px rgba(168,85,247,0.3)',
-              fontFamily: 'Syne, sans-serif',
-              color: 'white',
-            }}
-          >
-            {currentTrack.track.title.slice(0, 1)}
-          </div>
+          {/* Album art with actual cover or placeholder */}
+          {currentTrack.track.cover_url ? (
+            <img
+              src={currentTrack.track.cover_url}
+              alt={`${currentTrack.track.album} cover`}
+              className="w-12 h-12 rounded-xl flex-shrink-0 object-cover"
+              style={{
+                border: '1px solid rgba(168,85,247,0.5)',
+                boxShadow: '0 0 20px rgba(168,85,247,0.3)',
+              }}
+            />
+          ) : (
+            <div
+              className="w-12 h-12 rounded-xl flex-shrink-0 flex items-center justify-center text-xl font-bold select-none"
+              style={{
+                background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))',
+                border: '1px solid rgba(168,85,247,0.5)',
+                boxShadow: '0 0 20px rgba(168,85,247,0.3)',
+                fontFamily: 'Syne, sans-serif',
+                color: 'white',
+              }}
+            >
+              {currentTrack.track.title.slice(0, 1)}
+            </div>
+          )}
 
           <div className="flex-1 min-w-0">
             <div
@@ -127,6 +166,11 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
             <div className="text-sm truncate" style={{ color: 'var(--text-secondary)' }}>
               {currentTrack.track.artist}
             </div>
+            {!hasPreview && (
+              <div className="text-xs" style={{ color: 'var(--neon-pink)', marginTop: '2px' }}>
+                ⚠️ No audio preview available
+              </div>
+            )}
           </div>
 
           {/* Now playing indicator */}
@@ -141,7 +185,8 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsPaused(!isPaused)}
-              className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110"
+              disabled={!hasPreview}
+              className="w-10 h-10 flex items-center justify-center rounded-full transition-all duration-200 hover:scale-110 disabled:opacity-30 disabled:cursor-not-allowed"
               style={{
                 background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))',
                 border: '1px solid rgba(168,85,247,0.5)',
@@ -216,7 +261,7 @@ export function NowPlayingBar({ playlist, onSkip }: NowPlayingBarProps) {
             />
           </div>
           <span className="text-xs w-10 tabular-nums" style={{ color: 'var(--text-muted)' }}>
-            {formatDuration(currentTrack.track.duration_seconds)}
+            {hasPreview ? getDuration() : formatDuration(currentTrack.track.duration_seconds)}
           </span>
         </div>
       </div>

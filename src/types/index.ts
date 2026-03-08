@@ -7,6 +7,7 @@ export interface Track {
   duration_seconds: number;
   genre: string;
   cover_url: string | null;
+  preview_url: string | null;
 }
 
 export interface PlaylistTrack {

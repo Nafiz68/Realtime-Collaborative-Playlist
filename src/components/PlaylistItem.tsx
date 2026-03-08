@@ -132,17 +132,29 @@ export function PlaylistItem({ item, onVote, onRemove, onPlay }: PlaylistItemPro
               }}
             >
               <div className="flex gap-4">
-                <div
-                  className="w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl font-bold"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))',
-                    border: '1px solid rgba(168,85,247,0.4)',
-                    fontFamily: 'Syne, sans-serif',
-                    color: 'white',
-                  }}
-                >
-                  {item.track.title.slice(0, 1)}
-                </div>
+                {item.track.cover_url ? (
+                  <img
+                    src={item.track.cover_url}
+                    alt={`${item.track.album} cover`}
+                    className="w-20 h-20 rounded-xl flex-shrink-0 object-cover"
+                    style={{
+                      border: '1px solid rgba(168,85,247,0.4)',
+                      boxShadow: '0 0 20px rgba(168,85,247,0.3)',
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="w-20 h-20 rounded-xl flex-shrink-0 flex items-center justify-center text-2xl font-bold"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(168,85,247,0.4), rgba(236,72,153,0.4))',
+                      border: '1px solid rgba(168,85,247,0.4)',
+                      fontFamily: 'Syne, sans-serif',
+                      color: 'white',
+                    }}
+                  >
+                    {item.track.title.slice(0, 1)}
+                  </div>
+                )}
                 <div className="flex-1 min-w-0">
                   <h3
                     className="font-bold text-base mb-1 truncate"

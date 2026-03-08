@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --bg-primary: #070711;
-  --bg-secondary: #0d0d1a;
-  --bg-tertiary: #12122a;
-  --neon-purple: #a855f7;
-  --neon-cyan: #06b6d4;
-  --neon-pink: #ec4899;
-  --neon-green: #10b981;
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(168, 85, 247, 0.2);
-  --glass-border-hover: rgba(168, 85, 247, 0.5);
-  --text-primary: #f0ecff;
-  --text-secondary: #9b8ec4;
-  --text-muted: #5a5280;
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-tertiary: #334155;
+  --neon-purple: #a78bfa;
+  --neon-cyan: #22d3ee;
+  --neon-pink: #f472b6;
+  --neon-green: #34d399;
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(167, 139, 250, 0.3);
+  --glass-border-hover: rgba(167, 139, 250, 0.6);
+  --text-primary: #f8fafc;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
 }
 
 @theme inline {
@@ -39,17 +39,17 @@ body {
 
 /* === Scrollbar === */
 ::-webkit-scrollbar {
-  width: 4px;
+  width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--bg-secondary);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(168, 85, 247, 0.4);
+  background: rgba(167, 139, 250, 0.5);
   border-radius: 99px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(168, 85, 247, 0.7);
+  background: rgba(167, 139, 250, 0.8);
 }
 
 /* === Background animated blobs === */
@@ -64,35 +64,35 @@ body {
 .bg-blob {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.15;
+  filter: blur(90px);
+  opacity: 0.25;
   animation: blobFloat 12s ease-in-out infinite;
 }
 
 .bg-blob-1 {
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, var(--neon-purple), transparent 70%);
-  top: -200px;
-  left: -150px;
+  width: 700px;
+  height: 700px;
+  background: radial-gradient(circle, var(--neon-purple), transparent 60%);
+  top: -250px;
+  left: -200px;
   animation-delay: 0s;
   animation-duration: 14s;
 }
 
 .bg-blob-2 {
-  width: 500px;
-  height: 500px;
-  background: radial-gradient(circle, var(--neon-cyan), transparent 70%);
-  bottom: -200px;
-  right: -100px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--neon-cyan), transparent 60%);
+  bottom: -250px;
+  right: -150px;
   animation-delay: -5s;
   animation-duration: 16s;
 }
 
 .bg-blob-3 {
-  width: 400px;
-  height: 400px;
-  background: radial-gradient(circle, var(--neon-pink), transparent 70%);
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--neon-pink), transparent 60%);
   top: 40%;
   left: 50%;
   animation-delay: -9s;

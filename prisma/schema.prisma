@@ -23,6 +23,7 @@ model Track {
   duration_seconds Int
   genre            String
   cover_url        String?
+  preview_url      String?
   PlaylistTrack    PlaylistTrack[]
 }
 
@@ -44,4 +45,3 @@ model PlaylistTrack {
   @@index([position])
   @@index([room_id])
 }
-

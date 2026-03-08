@@ -366,7 +366,7 @@ function PlaylistApp({ roomCode }: { roomCode: string }) {
               </h2>
               <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Last {history.length} tracks</p>
             </div>
-            <div className="flex-1 overflow-y-auto p-3 space-y-2">
+            <div className="flex-1 overflow-y-auto p-3 space-y-2 pb-24">
               {history.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--text-muted)' }}>
                   <div className="text-3xl">🎵</div>
@@ -379,12 +379,21 @@ function PlaylistApp({ roomCode }: { roomCode: string }) {
                     className="glass-card rounded-xl p-3 transition-all hover:scale-[1.02]"
                   >
                     <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold"
-                        style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))', border: '1px solid rgba(168,85,247,0.3)' }}
-                      >
-                        {item.track.title.slice(0, 1)}
-                      </div>
+                      {item.track.cover_url ? (
+                        <img
+                          src={item.track.cover_url}
+                          alt={`${item.track.album} cover`}
+                          className="w-10 h-10 rounded-lg flex-shrink-0 object-cover"
+                          style={{ border: '1px solid rgba(168,85,247,0.3)' }}
+                        />
+                      ) : (
+                        <div
+                          className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold"
+                          style={{ background: 'linear-gradient(135deg, rgba(168,85,247,0.3), rgba(236,72,153,0.3))', border: '1px solid rgba(168,85,247,0.3)' }}
+                        >
+                          {item.track.title.slice(0, 1)}
+                        </div>
+                      )}
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-xs truncate" style={{ color: 'var(--text-primary)' }}>
                           {item.track.title}

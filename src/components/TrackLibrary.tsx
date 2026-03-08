@@ -85,14 +85,14 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
     <div className="flex flex-col h-full">
       {/* Library Header */}
       <div
-        className="flex-shrink-0 p-4 border-b"
+        className="flex-shrink-0 px-4 pt-3 pb-3 border-b"
         style={{
           borderColor: 'rgba(168,85,247,0.15)',
           background: 'linear-gradient(90deg, rgba(6,182,212,0.06) 0%, rgba(168,85,247,0.06) 100%)',
         }}
       >
         <h2
-          className="text-lg font-bold mb-3"
+          className="text-lg font-bold mb-2"
           style={{
             fontFamily: 'Syne, sans-serif',
             background: 'linear-gradient(90deg, #06b6d4, #a855f7)',
@@ -105,7 +105,7 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
         </h2>
         
         {/* Search */}
-        <div ref={searchRef} className="relative mb-3">
+        <div ref={searchRef} className="relative mb-2">
           <div className="relative">
             <svg
               className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
@@ -186,24 +186,48 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
           )}
         </div>
 
-        {/* Genre Pills */}
-        <div className="flex gap-1.5 flex-wrap">
-          {genres.map(genre => (
-            <button
-              key={genre}
-              onClick={() => setSelectedGenre(genre)}
-              className={`px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                selectedGenre === genre ? 'genre-pill-active' : 'genre-pill'
-              }`}
-            >
-              {genre}
-            </button>
-          ))}
+        {/* Genre Dropdown */}
+        <div className="relative">
+          <select
+            value={selectedGenre}
+            onChange={(e) => setSelectedGenre(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-xl text-sm font-medium appearance-none cursor-pointer transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(168,85,247,0.3)',
+              color: 'var(--text-primary)',
+              paddingRight: '2.5rem',
+            }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLSelectElement).style.borderColor = 'rgba(168,85,247,0.5)';
+              (e.currentTarget as HTMLSelectElement).style.background = 'rgba(168,85,247,0.08)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLSelectElement).style.borderColor = 'rgba(168,85,247,0.3)';
+              (e.currentTarget as HTMLSelectElement).style.background = 'rgba(255,255,255,0.04)';
+            }}
+          >
+            {genres.map(genre => (
+              <option key={genre} value={genre} style={{ background: '#1e293b', color: 'white' }}>
+                {genre === 'All' ? 'All Genres' : genre}
+              </option>
+            ))}
+          </select>
+          {/* Dropdown arrow icon */}
+          <svg
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 pointer-events-none"
+            style={{ color: 'var(--neon-purple)' }}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
         </div>
       </div>
 
       {/* Track List */}
-      <div className="flex-1 overflow-y-auto py-2">
+      <div className="flex-1 overflow-y-auto py-2 pb-24">
         {filteredTracks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3" style={{ color: 'var(--text-muted)' }}>
             <div className="text-2xl">🔍</div>
@@ -228,19 +252,31 @@ export function TrackLibrary({ tracks, playlistTrackIds, onAddTrack, searchTerm,
                   (e.currentTarget as HTMLDivElement).style.borderColor = 'rgba(255,255,255,0.05)';
                 }}
               >
-                {/* Track letter avatar */}
-                <div
-                  className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center text-xs font-bold select-none"
-                  style={{
-                    background: inPlaylist
-                      ? 'rgba(168,85,247,0.15)'
-                      : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${inPlaylist ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.08)'}`,
-                    color: inPlaylist ? '#a855f7' : 'var(--text-muted)',
-                  }}
-                >
-                  {track.title.slice(0, 1)}
-                </div>
+                {/* Track album cover or letter avatar */}
+                {track.cover_url ? (
+                  <img
+                    src={track.cover_url}
+                    alt={`${track.album} cover`}
+                    className="w-10 h-10 rounded-lg flex-shrink-0 object-cover"
+                    style={{
+                      border: `1px solid ${inPlaylist ? 'rgba(168,85,247,0.4)' : 'rgba(255,255,255,0.1)'}`,
+                      boxShadow: inPlaylist ? '0 0 10px rgba(168,85,247,0.2)' : 'none',
+                    }}
+                  />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-sm font-bold select-none"
+                    style={{
+                      background: inPlaylist
+                        ? 'rgba(168,85,247,0.15)'
+                        : 'rgba(255,255,255,0.05)',
+                      border: `1px solid ${inPlaylist ? 'rgba(168,85,247,0.3)' : 'rgba(255,255,255,0.08)'}`,
+                      color: inPlaylist ? '#a855f7' : 'var(--text-muted)',
+                    }}
+                  >
+                    {track.title.slice(0, 1)}
+                  </div>
+                )}
 
                 <div className="flex-1 min-w-0">
                   <div className="font-medium text-xs truncate" style={{ color: 'var(--text-primary)' }}>{track.title}</div>

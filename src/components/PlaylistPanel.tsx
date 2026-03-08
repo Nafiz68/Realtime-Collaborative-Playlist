@@ -98,7 +98,7 @@ export function PlaylistPanel({ playlist, onVote, onRemove, onReorder, onPlay, a
         </p>
       </div>
 
-      <div className="flex-1 overflow-y-auto overflow-x-visible py-2">
+      <div className="flex-1 overflow-y-auto overflow-x-visible py-2 pb-24">
         {playlist.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             <div className="text-center px-6">
