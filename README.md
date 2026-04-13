@@ -1,5 +1,5 @@
 # 🎵 Realtime Collaborative Playlist Manager
-
+![System Overlay](./Screenshot.png)
 🚀 **Live Demo:** [https://realtime-collaborative-playlist.vercel.app/](https://realtime-collaborative-playlist.vercel.app/)
 
 A modern, real-time collaborative playlist application built with Next.js 16, featuring Server-Sent Events (SSE) for live synchronization, drag-and-drop reordering, voting system, and a beautiful glass morphism UI.
